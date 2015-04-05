@@ -1,5 +1,4 @@
 import marshal
-import struct
 
 interned_strs = []
 
