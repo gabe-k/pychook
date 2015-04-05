@@ -3,7 +3,7 @@ import struct
 
 interned_strs = []
 
-class file_writter():
+class file_writer():
 	def __init__(self, filename):
 		self.writer = open(filename, 'wb')
 
@@ -15,7 +15,7 @@ class file_writter():
 		self.writer.write(data)
 
 	def close(self):
-		self.writter.close()
+		self.writer.close()
 
 class file_reader():
 	def __init__(self, filename):
@@ -56,8 +56,8 @@ class pyc_none():
 	def get_type(self):
 		return 'N'
 
-	def dump(self, writter):
-		writter.write(self.get_type())
+	def dump(self, writer):
+		writer.write(self.get_type())
 
 class pyc_strref():
 	def __init__(self, f):
@@ -72,9 +72,9 @@ class pyc_strref():
 	def get_type(self):
 		return 'R'
 
-	def dump(self, writter):
-		writter.write(self.get_type())
-		writter.write_int32(self.val)
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write_int32(self.val)
 
 class pyc_int():
 	def __init__(self, f):
@@ -86,9 +86,9 @@ class pyc_int():
 	def get_type(self):
 		return 'i'
 
-	def dump(self, writter):
-		writter.write(self.get_type())
-		writter.write_int32(self.val)
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write_int32(self.val)
 
 class pyc_str():
 	def __init__(self, f, interned=False):
@@ -110,10 +110,10 @@ class pyc_str():
 		else:
 			return 't'
 
-	def dump(self, writter):
-		writter.write(self.get_type())
-		writter.write_int32(len(self.val))
-		writter.write(self.val)
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write_int32(len(self.val))
+		writer.write(self.val)
 
 class pyc_tuple():
 	def __init__(self, f):
@@ -134,11 +134,11 @@ class pyc_tuple():
 	def get_type(self):
 		return '('
 
-	def dump(self, writter):
-		writter.write(self.get_type())
-		writter.write_int32(len(self.values))
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write_int32(len(self.values))
 		for v in self.values:
-			v.dump(writter)
+			v.dump(writer)
 
 class pyc_code():
 	
@@ -194,22 +194,22 @@ class pyc_code():
 	def get_type(self):
 		return 'c'
 
-	def dump(self, writter):
-		writter.write(self.get_type())
-		writter.write_int32(self.argcount)
-		writter.write_int32(self.nlocals)
-		writter.write_int32(self.stacksize)
-		writter.write_int32(self.flags)
-		self.code.dump(writter)
-		self.consts.dump(writter)
-		self.names.dump(writter)
-		self.varnames.dump(writter)
-		self.freevars.dump(writter)
-		self.cellvars.dump(writter)
-		self.filename.dump(writter)
-		self.name.dump(writter)
-		writter.write_int32(self.firstlineno)
-		self.lnotab.dump(writter)
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write_int32(self.argcount)
+		writer.write_int32(self.nlocals)
+		writer.write_int32(self.stacksize)
+		writer.write_int32(self.flags)
+		self.code.dump(writer)
+		self.consts.dump(writer)
+		self.names.dump(writer)
+		self.varnames.dump(writer)
+		self.freevars.dump(writer)
+		self.cellvars.dump(writer)
+		self.filename.dump(writer)
+		self.name.dump(writer)
+		writer.write_int32(self.firstlineno)
+		self.lnotab.dump(writer)
 
 class PyBinary():
 	def __init__(self, filename):
@@ -219,7 +219,7 @@ class PyBinary():
 		self.code = f.unmarshal()
 
 	def dump_to_file(self, filename):
-		w = file_writter(filename)
+		w = file_writer(filename)
 		w.write_int32(self.magic)
 		w.write_int32(self.timestamp)
 		self.code.dump(w)
