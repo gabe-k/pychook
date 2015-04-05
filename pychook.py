@@ -1,10 +1,11 @@
 import marshal
+import cStringIO
 
 interned_strs = []
 
 class file_writer():
-	def __init__(self, filename):
-		self.writer = open(filename, 'wb')
+	def __init__(self, writer):
+		self.writer = writer
 
 	def write_int32(self, val):
 		buff = chr(val & 0xFF) + chr((val & 0xFF00) >> 8) + chr((val & 0xFF0000) >> 16) + chr((val & 0xFF000000) >> 24)
@@ -17,8 +18,8 @@ class file_writer():
 		self.writer.close()
 
 class file_reader():
-	def __init__(self, filename):
-		self.reader = open(filename, 'rb')
+	def __init__(self, reader):
+		self.reader = reader
 
 	def unmarshal(self):
 		t = self.reader.read(1)[0]
@@ -140,7 +141,6 @@ class pyc_tuple():
 			v.dump(writer)
 
 class pyc_code():
-	
 	def __init__(self, f):
 		self.argcount = f.read_int32()
 		self.nlocals = f.read_int32()
@@ -158,12 +158,9 @@ class pyc_code():
 		self.lnotab = f.unmarshal()
 
 	def hook_func(self, f):
-		t = open('temp_func.bin', 'wb')
-		marshal.dump(f.func_code, t)
-		t.close()
-		t = file_reader('temp_func.bin')
-		t.read(1)
-		c = pyc_code(t)
+		func_data = cStringIO.StringIO(marshal.dumps(f.func_code))
+		func_data.seek(1) # skip the first byte of the file
+		c = pyc_code(file_reader(func_data))
 		self.hook(c)
 
 	def hook(self, c):
@@ -177,8 +174,6 @@ class pyc_code():
 		if len(name) > len(start):
 			tail = name[len(start) + 1:]
 	
-		#print(tail)
-
 		for c in self.consts.get_value():
 			if c.get_type() == 'c':
 				if c.get_name() == start:
@@ -212,13 +207,13 @@ class pyc_code():
 
 class PyBinary():
 	def __init__(self, filename):
-		f = file_reader(filename)
+		f = file_reader(open(filename, 'rb'))
 		self.magic = f.read_int32()
 		self.timestamp = f.read_int32()
 		self.code = f.unmarshal()
 
 	def dump_to_file(self, filename):
-		w = file_writer(filename)
+		w = file_writer(open(filename, 'wb'))
 		w.write_int32(self.magic)
 		w.write_int32(self.timestamp)
 		self.code.dump(w)
