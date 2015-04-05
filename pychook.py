@@ -17,35 +17,6 @@ class file_writer():
 	def close(self):
 		self.writer.close()
 
-class file_reader():
-	def __init__(self, reader):
-		self.reader = reader
-
-	def unmarshal(self):
-		t = self.reader.read(1)[0]
-
-		if t == 'i': # int
-			return pyc_int(self)
-		elif t == '(':
-			return pyc_tuple(self)
-		elif t == 's':
-			return pyc_str(self)
-		elif t == 't':
-			return pyc_str(self, interned=True)
-		elif t == 'c':
-			return pyc_code(self)
-		elif t == 'R':
-			return pyc_strref(self)
-		elif t == 'N':
-			return pyc_none(self)
-
-	def read_int32(self):
-		buff = self.reader.read(4)
-		return ord(buff[0]) | ord(buff[1]) << 8 | ord(buff[2]) << 16 | ord(buff[3]) << 24
-	
-	def read(self, length):
-		return self.reader.read(length)
-
 class pyc_none():
 	def __init__(self, f):
 		pass
@@ -204,6 +175,34 @@ class pyc_code():
 		self.name.dump(writer)
 		writer.write_int32(self.firstlineno)
 		self.lnotab.dump(writer)
+
+class file_reader():
+	object_types = { 'i': pyc_int,
+			'(': pyc_tuple,
+			's': pyc_str,
+			'c': pyc_code,
+			'R': pyc_strref,
+			'N': pyc_none }
+
+	def __init__(self, reader):
+		self.reader = reader
+
+	def unmarshal(self):
+		t = self.reader.read(1)[0]
+		
+		# special case for interned strings, gotta make it nicer
+		if t == 't':
+			return file_reader.object_types['s'](self, interned=True)
+		return file_reader.object_types[t](self)
+
+	def read_int32(self):
+		buff = self.reader.read(4)
+		return ord(buff[0]) | ord(buff[1]) << 8 | ord(buff[2]) << 16 | ord(buff[3]) << 24
+	
+	def read(self, length):
+		return self.reader.read(length)
+
+
 
 class PyBinary():
 	def __init__(self, filename):
