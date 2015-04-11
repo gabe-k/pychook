@@ -1,4 +1,5 @@
 import marshal
+import struct
 import cStringIO
 
 interned_strs = []
@@ -9,6 +10,11 @@ class file_writer():
 
 	def write_int32(self, val):
 		buff = chr(val & 0xFF) + chr((val & 0xFF00) >> 8) + chr((val & 0xFF0000) >> 16) + chr((val & 0xFF000000) >> 24)
+		self.writer.write(buff)
+
+	def write_int64(self, val):
+		buff = chr(val & 0xFF) + chr((val & 0xFF00) >> 8) + chr((val & 0xFF0000) >> 16) + chr((val & 0xFF000000) >> 24) \
+				+ chr((val & 0xFF00000000) >> 32) + chr((val & 0xFF0000000000) >> 40) + chr((val & 0xFF0000000000) >> 48) + chr((val & 0xFF000000000000) >> 56)
 		self.writer.write(buff)
 	
 	def write(self, data):
@@ -60,6 +66,35 @@ class pyc_int():
 	def dump(self, writer):
 		writer.write(self.get_type())
 		writer.write_int32(self.val)
+
+class pyc_int64():
+	def __init__(self, f):
+		self.val = f.read_int64()
+
+	def get_val(self):
+		return self.val
+
+	def get_type(self):
+		return 'I'
+
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write_int64(self.val)
+
+class pyc_binary_float():
+	def __init__(self, f):
+		self.val = struct.unpack('d', f.read(8))[0]
+
+	def get_value(self):
+		return self.val
+
+	def get_type(self):
+		return 'g'
+	
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write(struct.pack('d', self.val))
+
 
 class pyc_str():
 	def __init__(self, f, interned=False):
@@ -178,6 +213,8 @@ class pyc_code():
 
 class file_reader():
 	object_types = { 'i': pyc_int,
+			'I': pyc_int64,
+			'g': pyc_binary_float,
 			'(': pyc_tuple,
 			's': pyc_str,
 			'c': pyc_code,
@@ -198,7 +235,11 @@ class file_reader():
 	def read_int32(self):
 		buff = self.reader.read(4)
 		return ord(buff[0]) | ord(buff[1]) << 8 | ord(buff[2]) << 16 | ord(buff[3]) << 24
-	
+
+	def read_int64(self):
+		buff = self.reader.read(8)
+		return ord(buff[0]) | ord(buff[1]) << 8 | ord(buff[2]) << 16 | ord(buff[3]) << 24 | ord(buff[4]) << 32 | ord(buff[5]) << 40 | ord(buff[6]) << 48 | ord(buff[7]) << 56
+
 	def read(self, length):
 		return self.reader.read(length)
 
