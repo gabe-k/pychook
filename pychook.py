@@ -16,6 +16,9 @@ class file_writer():
 		buff = chr(val & 0xFF) + chr((val & 0xFF00) >> 8) + chr((val & 0xFF0000) >> 16) + chr((val & 0xFF000000) >> 24) \
 				+ chr((val & 0xFF00000000) >> 32) + chr((val & 0xFF0000000000) >> 40) + chr((val & 0xFF0000000000) >> 48) + chr((val & 0xFF000000000000) >> 56)
 		self.writer.write(buff)
+
+	def write_double(self, val):
+		self.write(struct.pack('d', self.val))
 	
 	def write(self, data):
 		self.writer.write(data)
@@ -83,7 +86,7 @@ class pyc_int64():
 
 class pyc_binary_float():
 	def __init__(self, f):
-		self.val = struct.unpack('d', f.read(8))[0]
+		self.val = f.read_double()
 
 	def get_value(self):
 		return self.val
@@ -94,6 +97,22 @@ class pyc_binary_float():
 	def dump(self, writer):
 		writer.write(self.get_type())
 		writer.write(struct.pack('d', self.val))
+
+class pyc_binary_complex():
+	def __init__(self, f):
+		self.real = f.read_double()
+		self.imag = f.read_double()
+
+	def get_value(self):
+		return (self.real, self.imag)
+
+	def get_type(self):
+		return 'y'
+
+	def dump(self, writer):
+		writer.write(self.get_type())
+		writer.write_float(self.real)
+		writer.write_float(self.imag)
 
 
 class pyc_str():
@@ -215,6 +234,7 @@ class file_reader():
 	object_types = { 'i': pyc_int,
 			'I': pyc_int64,
 			'g': pyc_binary_float,
+			'y': pyc_binary_complex,
 			'(': pyc_tuple,
 			's': pyc_str,
 			'c': pyc_code,
@@ -239,6 +259,9 @@ class file_reader():
 	def read_int64(self):
 		buff = self.reader.read(8)
 		return ord(buff[0]) | ord(buff[1]) << 8 | ord(buff[2]) << 16 | ord(buff[3]) << 24 | ord(buff[4]) << 32 | ord(buff[5]) << 40 | ord(buff[6]) << 48 | ord(buff[7]) << 56
+
+	def read_double(self):
+		return struct.unpack('d', self.read(8))[0]
 
 	def read(self, length):
 		return self.reader.read(length)
