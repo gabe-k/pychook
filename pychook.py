@@ -192,7 +192,7 @@ class pyc_code():
 		self.consts.append(c)
 		func_index = self.consts.get_len() -1
 		self.code.set_value('\x64' + chr(func_index & 0xFF) + chr((func_index & 0xFF00) >> 8) + '\x84\x00\x00\x83\x00\x00\x01' + self.code.get_value())
-
+	
 	def get_function(self, name):
 		start = name.split('.', 1)[0]
 		tail = None
@@ -266,17 +266,25 @@ class file_reader():
 	def read(self, length):
 		return self.reader.read(length)
 
+	def close(self):
+		self.reader.close()
 
 
 class PyBinary():
 	def __init__(self, filename):
+		self.filename = filename
 		f = file_reader(open(filename, 'rb'))
 		self.magic = f.read_int32()
 		self.timestamp = f.read_int32()
 		self.code = f.unmarshal()
+		f.close()
 
 	def dump_to_file(self, filename):
 		w = file_writer(open(filename, 'wb'))
 		w.write_int32(self.magic)
 		w.write_int32(self.timestamp)
 		self.code.dump(w)
+		w.close()
+
+	def save(self):
+		self.dump_to_file(self.filename)
